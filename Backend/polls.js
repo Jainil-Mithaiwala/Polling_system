@@ -6,9 +6,11 @@ const cors = require("cors");
 const app = express();
 const port = 5001;
 
+// Middleware
 app.use(bodyParser.json());
 app.use(cors());
 
+// Create MySQL connection
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -16,6 +18,7 @@ const db = mysql.createConnection({
   database: "polling_system",
 });
 
+// Connect to MySQL
 db.connect((err) => {
   if (err) {
     console.error("Database connection failed:", err.stack);
@@ -24,6 +27,7 @@ db.connect((err) => {
   console.log("Connected to database.");
 });
 
+// Create Poll
 app.post("/api/create-poll", (req, res) => {
   const { question, options } = req.body;
 
@@ -31,7 +35,8 @@ app.post("/api/create-poll", (req, res) => {
     return res
       .status(400)
       .json({
-        error: "Invalid input. Please provide a question and at least two options.",
+        error:
+          "Invalid input. Please provide a question and at least two options.",
       });
   }
 
@@ -52,6 +57,7 @@ app.post("/api/create-poll", (req, res) => {
   });
 });
 
+// Read Polls
 app.get("/api/polls", (req, res) => {
   const query = "SELECT * FROM polls";
 
@@ -61,6 +67,7 @@ app.get("/api/polls", (req, res) => {
       return res.status(500).json({ error: "Failed to fetch polls." });
     }
 
+    // Parse options JSON
     results.forEach((poll) => {
       poll.options = JSON.parse(poll.options);
     });
@@ -69,6 +76,7 @@ app.get("/api/polls", (req, res) => {
   });
 });
 
+// Update Poll
 app.put("/api/update-poll/:id", (req, res) => {
   const { id } = req.params;
   const { question, options } = req.body;
@@ -77,7 +85,8 @@ app.put("/api/update-poll/:id", (req, res) => {
     return res
       .status(400)
       .json({
-        error: "Invalid input. Please provide a question and at least two options.",
+        error:
+          "Invalid input. Please provide a question and at least two options.",
       });
   }
 
@@ -96,6 +105,7 @@ app.put("/api/update-poll/:id", (req, res) => {
   });
 });
 
+// Delete Poll
 app.delete("/api/delete-poll/:id", (req, res) => {
   const { id } = req.params;
 
@@ -112,24 +122,29 @@ app.delete("/api/delete-poll/:id", (req, res) => {
   });
 });
 
+// Example backend code (Node.js/Express)
 app.post("/api/polls/:pollId/vote", async (req, res) => {
   const { pollId } = req.params;
   const { optionIndex } = req.body;
 
+  // Validate optionIndex
   if (typeof optionIndex !== "number" || optionIndex < 0) {
     return res.status(400).send({ error: "Invalid optionIndex" });
   }
 
   try {
+    // Fetch the poll
     const poll = await Poll.findById(pollId);
     if (!poll) {
       return res.status(404).send({ error: "Poll not found" });
     }
 
+    // Check if optionIndex is within the range
     if (optionIndex >= poll.options.length) {
       return res.status(400).send({ error: "Invalid optionIndex" });
     }
 
+    // Increment the vote count
     poll.votes[optionIndex] = (poll.votes[optionIndex] || 0) + 1;
     await poll.save();
 
@@ -140,6 +155,7 @@ app.post("/api/polls/:pollId/vote", async (req, res) => {
   }
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
